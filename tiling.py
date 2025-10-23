@@ -2,9 +2,9 @@ import os
 import cv2
 
 # --- Configuration ---
-SOURCE_DIR = "burnout"               # The directory with images to be segmented
-OUTPUT_DIR = "burnout_tiles"
-TILE_SIZE = (50, 50)                      # The size (width, height) of each tile to crop
+SOURCE_DIR = "büro"               # The directory with images to be segmented
+OUTPUT_DIR = "büro_tiles"
+TILE_SIZE = (200, 200)                      # The size (width, height) of each tile to crop
 
 def segment_images_in_directory():
     """

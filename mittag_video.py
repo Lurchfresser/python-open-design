@@ -7,15 +7,14 @@ from tqdm import tqdm
 import librosa
 
 # --- Configuration ---
-SOURCE_DIR_A = "büro_tiles"         # Start with images from this folder
-SOURCE_DIR_B = "burnout_tiles"      # End with images from this folder
-AUDIO_INPUT_PATH = "audio_input/beat.mp3" # Path to the beat audio file
+SOURCE_DIR = "büro"      # The folder with images to transition to
+AUDIO_INPUT_PATH = "audio_input/beat_full.mpeg" # Path to the beat audio file
 OUTPUT_VIDEO_PATH = "mittag.mp4"
 TILE_SIZE = (50, 50)        # The size (width, height) of each tile
 OUTPUT_DIMS = (900, 1600)     # The dimensions (width, height) of the final video
 
 # --- Video Animation Configuration ---
-VIDEO_DURATION_SECONDS = 90
+VIDEO_DURATION_SECONDS = 92 # Ends at 1:32
 FPS = 30
 # Rate of tiles to replace per beat (starts low, ends high)
 START_REPLACEMENT_RATE = 1.0 # At least one tile per beat
@@ -79,29 +78,24 @@ def create_tiled_transition_video():
     output_width, output_height = OUTPUT_DIMS
 
     # --- Pre-load and Resize Source Images ---
-    source_images_A = load_and_resize_images(SOURCE_DIR_A, TILE_SIZE)
-    source_images_B = load_and_resize_images(SOURCE_DIR_B, TILE_SIZE)
+    source_images = load_and_resize_images(SOURCE_DIR, TILE_SIZE)
 
-    if not source_images_A or not source_images_B:
-        print("Error: Could not load images from one or both source directories. Exiting.")
+    if not source_images:
+        print("Error: Could not load images from the source directory. Exiting.")
         return
 
     # --- Detect Beats from Audio ---
     beat_frames = detect_beats(AUDIO_INPUT_PATH, FPS)
 
-    # --- Create Initial Mosaic & Store Tile Positions ---
-    output_image = np.zeros((output_height, output_width, 3), dtype=np.uint8)
+    # --- Create Initial White Canvas & Store Tile Positions ---
+    output_image = np.full((output_height, output_width, 3), 255, dtype=np.uint8)
     tile_positions = []
 
-    print("Building initial mosaic frame from source A...")
+    print("Building grid of tile positions...")
     for y in range(0, output_height, tile_height):
         for x in range(0, output_width, tile_width):
-            # Initial frame uses only source A
-            tile = random.choice(source_images_A)
-
             end_y, end_x = y + tile_height, x + tile_width
             if end_y <= output_height and end_x <= output_width:
-                output_image[y:end_y, x:end_x] = tile
                 tile_positions.append({'x': x, 'y': y})
 
     # --- Setup Video Writer ---
@@ -137,11 +131,8 @@ def create_tiled_transition_video():
                     pos_info = random.choice(tile_positions)
                     x, y = pos_info['x'], pos_info['y']
 
-                    # The chance of picking from folder B increases with progress
-                    if random.random() < progress:
-                        new_tile = random.choice(source_images_B)
-                    else:
-                        new_tile = random.choice(source_images_A)
+                    # Always pick a new tile from the source directory
+                    new_tile = random.choice(source_images)
 
                     # Place the new tile on the canvas
                     output_image[y:y+tile_height, x:x+tile_width] = new_tile
